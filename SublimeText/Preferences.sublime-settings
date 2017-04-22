@@ -1,5 +1,7 @@
 {
-    "font_size": 13,
+    "font_face": "D2Coding",
+    "font_size": 14,
+    "font_options" : ["bold"],
     "ignored_packages": [""],
     "vintage_ctrl_keys": true,
     "vintage_start_in_command_mode": true,
