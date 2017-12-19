@@ -18,7 +18,7 @@ set hlsearch "검색 하이라이트
 set expandtab "tab 대신 space
 set nocompatible
 set backspace=2
-set fileencoding=utf-8 "파일 인코딩 형식 지정
+set fileencodings=utf-8,euc-kr "파일 인코딩 형식 지정
 set history=1000 "명령어 히스토리 1000개
 set title "파일제목 표시
 set ruler "상태표시줄에 커서 위치표시
