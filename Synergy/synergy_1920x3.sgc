@@ -1,0 +1,38 @@
+section: screens
+	NoUnique-Workstation:
+		halfDuplexCapsLock = false
+		halfDuplexNumLock = false
+		halfDuplexScrollLock = false
+		xtestIsXineramaUnaware = false
+		switchCorners = none 
+		switchCornerSize = 0
+	NoUnique-PC:
+		halfDuplexCapsLock = false
+		halfDuplexNumLock = false
+		halfDuplexScrollLock = false
+		xtestIsXineramaUnaware = false
+		switchCorners = none +top-left +top-right 
+		switchCornerSize = 2560
+end
+
+section: aliases
+end
+
+section: links
+	NoUnique-Workstation:
+		down = NoUnique-PC
+	NoUnique-PC:
+		up = NoUnique-Workstation
+end
+
+section: options
+	relativeMouseMoves = false
+	screenSaverSync = true
+	win32KeepForeground = false
+	disableLockToScreen = false
+	clipboardSharing = true
+	clipboardSharingSize = 3072
+	switchCorners = none 
+	switchCornerSize = 0
+end
+
