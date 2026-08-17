@@ -1,0 +1,26 @@
+# brew bundle --file=Brewfile
+# 설치할 것을 선언으로 관리한다. 추가할 게 생기면 여기에 한 줄 넣으면 된다.
+
+# --- CLI ---
+brew "git"            # Apple git(2.50)보다 최신. PATH 우선순위로 이쪽이 잡힌다
+brew "gh"             # GitHub CLI. SSH 키 생성+등록까지 대신해준다
+brew "displayplacer"  # 디스플레이 스케일링/배치를 CLI로
+brew "cliclick"       # 좌표 클릭. 접근성 API를 안 열어주는 앱 조작용
+
+# --- GUI ---
+cask "google-chrome"
+cask "rectangle"             # 창 배치. 설정은 scripts/rectangle.sh
+cask "visual-studio-code"    # `code` / `code-tunnel` CLI도 함께 링크된다
+cask "ghostty"               # 터미널. 설정은 scripts/ghostty.sh + config/ghostty/config
+
+# --- 폰트 ---
+# Ghostty 내장 JetBrains Mono는 앱에 임베드돼 이름으로 참조할 수 없다.
+# 폴백 목록을 지정하려면 첫 번째 폰트도 시스템에 설치돼 있어야 한다.
+cask "font-jetbrains-mono"   # 영문
+cask "font-d2coding"         # 한글. 글리프 폭이 영문의 정확히 2배라 열이 안 어긋난다
+
+# --- VS Code 확장 ---
+# brew bundle이 `code --install-extension`을 대신 호출한다.
+# 확장 ID는 `code --list-extensions`로 확인.
+vscode "anthropic.claude-code"   # Claude Code
+vscode "openai.chatgpt"          # Codex – OpenAI's coding agent (ID가 chatgpt인 점 주의)

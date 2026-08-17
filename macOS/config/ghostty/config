@@ -1,0 +1,58 @@
+# Ghostty 설정
+# ~/.config/ghostty/config 에 심볼릭 링크된다 (scripts/ghostty.sh)
+#
+# ⚠️ 값 뒤에 인라인 주석을 붙일 수 없다. `key = value  # 설명` 은 주석까지 값으로 읽혀
+#    "invalid value" 오류가 난다. 주석은 반드시 별도 줄에 쓸 것.
+#
+# 설정 키/액션은 추측하지 말고 바이너리에서 확인할 것:
+#   ghostty +show-config --default --docs    전체 설정 키 + 설명
+#   ghostty +list-actions                    키바인드에 쓸 수 있는 액션
+#   ghostty +validate-config                 문법 검사
+
+# ── Quick Terminal (iTerm2의 Hotkey Window 대응) ────────────────
+# 어느 데스크탑에 있든 화면 상단에서 내려오는 터미널.
+#
+# ⚠️ 이것만 기본 키바인드가 없다. 직접 지정해야 기능이 켜진다.
+#    ("Note: There is no default keybind for toggling the quick terminal.")
+#
+# `global:` 접두사 = Ghostty가 포커스를 갖고 있지 않아도 동작 (macOS 1.0.0+)
+#
+# ⚠️ 우측 Command는 한/영 키로 바뀌어 있으므로(SETUP-LOG 12번) 좌측 Command를 쓸 것.
+#
+# ⚠️ 키를 `t`가 아니라 `key_t`로 쓴다. 이게 핵심이다.
+#    `t`는 유니코드 문자 매칭이라 입력 소스의 영향을 받는다. 한글 입력 상태에서는
+#    T 키가 `ㅅ`으로 변환되어 `t`와 매칭되지 않고, 단축키가 먹지 않는다.
+#    `key_t`(= W3C `KeyT`)는 물리 키 위치로 매칭하므로 입력 소스와 무관하게 동작한다.
+#    문서: "Physical keys always match with a higher priority than Unicode codepoints."
+keybind = global:opt+cmd+key_t=toggle_quick_terminal
+
+# 아래 넷은 사실 기본값이지만, 의도를 드러내려고 명시한다.
+# 상단에서 내려옴
+quick-terminal-position = top
+# 현재 데스크탑으로 따라옴 (remain = 원래 데스크탑에 머무름)
+quick-terminal-space-behavior = move
+# 포커스를 잃으면 자동으로 숨김
+quick-terminal-autohide = true
+quick-terminal-animation-duration = 0.2
+
+# ── 폰트 ────────────────────────────────────────────────────────
+# font-family를 여러 번 쓰면 폴백 목록이 된다(앞에서부터 찾는다).
+# 값을 하나도 지정하지 않으면 Ghostty 내장 JetBrains Mono를 쓰는데, 거기엔 한글
+# 글리프가 없어서 macOS가 임의의 폰트로 대체한다 → 한글만 어색하게 보이는 원인.
+#
+# D2Coding: 네이버가 만든 한글 코딩 폰트. **한글 글리프 폭이 영문의 정확히 2배**라
+#           터미널에서 열이 어긋나지 않는다. 이게 터미널 한글 폰트의 핵심 조건이다.
+font-family = "JetBrains Mono"
+font-family = "D2Coding"
+font-size = 13
+
+# ── 외형 ────────────────────────────────────────────────────────
+# 배경 투명도 (0.0 완전 투명 ~ 1.0 불투명)
+background-opacity = 0.5
+# 뒤 배경을 흐리게 처리. 투명도를 높게 주면 뒤 내용이 비쳐 글자가 읽기 어려운데
+# 블러를 켜면 대비가 살아난다.
+background-blur = true
+
+# ── 그 외 ───────────────────────────────────────────────────────
+# 창을 닫을 때 확인 대화상자 띄우지 않기 (프로세스가 돌고 있어도)
+confirm-close-surface = false
