@@ -13,6 +13,11 @@ cask "rectangle"             # 창 배치. 설정은 scripts/rectangle.sh
 cask "visual-studio-code"    # `code` / `code-tunnel` CLI도 함께 링크된다
 cask "ghostty"               # 터미널. 설정은 scripts/ghostty.sh + config/ghostty/config
 
+# --- 협업 / 디자인 ---
+cask "slack"
+cask "notion"
+cask "figma"
+
 # --- 폰트 ---
 # Ghostty 내장 JetBrains Mono는 앱에 임베드돼 이름으로 참조할 수 없다.
 # 폴백 목록을 지정하려면 첫 번째 폰트도 시스템에 설치돼 있어야 한다.
