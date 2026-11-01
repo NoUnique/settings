@@ -29,3 +29,4 @@ cask "font-d2coding"         # 한글. 글리프 폭이 영문의 정확히 2배
 # 확장 ID는 `code --list-extensions`로 확인.
 vscode "anthropic.claude-code"   # Claude Code
 vscode "openai.chatgpt"          # Codex – OpenAI's coding agent (ID가 chatgpt인 점 주의)
+vscode "vscodevim.vim"          # Vim 키바인딩. 길게 누르기 문제는 scripts/vscode.sh

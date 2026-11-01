@@ -586,16 +586,16 @@ Claude Code 세션과 원격 개발 연결을 계속 띄워두려면 필수. 기
                     전      후
 SleepDisabled      (없음) →  1     ← 뚜껑 닫아도 안 잠듦 (전역)
 AC     sleep         1   →  0
-       displaysleep 10   → 10
+       displaysleep 10   → 60     ← 잠금 화면 설정과 연동 (19번)
 배터리 sleep         1   →  0     ← 배터리에서도 안 잠듦
-       displaysleep  2   →  5
+       displaysleep  2   → 30
 ```
 
 ```bash
 sudo pmset -a sleep 0            # -a = 전원 소스 무관
 sudo pmset -a disablesleep 1     # 뚜껑 닫기까지 차단
-sudo pmset -c displaysleep 10    # 화면은 꺼진다 (AC 10분 / 배터리 5분)
-sudo pmset -b displaysleep 5
+sudo pmset -c displaysleep 60    # 화면은 꺼진다 (AC 60분 / 배터리 30분)
+sudo pmset -b displaysleep 30
 pmset -g custom                  # 확인
 ```
 
@@ -1325,3 +1325,174 @@ GUI 토글은 드라이버에 즉시 통지되므로 그 시점에 반영된다.
 - `tcpkeepalive 1`, `powernap 1`은 기본으로 켜져 있어 네트워크 연결이 유지된다.
 - `ttyskeepawake 1`도 기본값 — 활성 SSH 세션이 있으면 그 자체로 잠자기를 막는다.
 - `disksleep`은 SSD라 세션에 영향 없다.
+
+---
+
+## 19. 잠금 화면 / 화면 보호기 ✅
+
+**실행: [`scripts/lock-screen.sh`](scripts/lock-screen.sh)**
+
+| 항목 | 값 | 소관 |
+|---|---|---|
+| 화면 보호기 시작 | 30분 | `com.apple.screensaver idleTime` |
+| 디스플레이 끄기 (배터리) | 30분 | `pmset -b displaysleep` |
+| 디스플레이 끄기 (AC) | 60분 | `pmset -c displaysleep` |
+| 암호 요구 | 1시간 | `sysadminctl -screenLock` |
+
+세 값이 순서대로 얽혀 있다:
+**화면 보호기(30분) → 디스플레이 끄기(30/60분) → 암호 요구(1시간)**
+화면이 꺼져도 1시간 동안은 암호 없이 돌아올 수 있다는 뜻이다.
+
+### 함정: 암호 요구 값은 `defaults`에 없다
+
+macOS 13+ 에서 이 값은 `com.apple.screensaver` 도메인에 저장되지 않는다.
+`defaults read` 로는 **`(미설정)`** 으로 나오지만 실제로는 설정돼 있다.
+
+```bash
+sysadminctl -screenLock status     # → screenLock delay is 3600 seconds
+```
+
+설정에는 관리자 인증이 필요해 자동화되지 않는다:
+
+```bash
+sysadminctl -screenLock 3600 -password -
+```
+
+### 함정: `-currentHost` 없으면 UI에 반영되지 않는다
+
+```bash
+defaults -currentHost write com.apple.screensaver idleTime -int 1800
+```
+
+`-currentHost` 를 빼면 값은 써지지만 시스템 설정 화면에 나타나지 않는다.
+
+**메모** — 디스플레이 끄기 시간은 `pmset` 소관이라 [`scripts/power-keep-awake.sh`](scripts/power-keep-awake.sh)
+에서 설정한다. 잠자기 방지와 같은 명령에 묶여 있어 분리하면 서로 덮어쓴다.
+10번 항목의 값(AC 10분 / 배터리 5분)을 여기 맞춰 60분 / 30분으로 갱신했다.
+
+---
+
+## 20. 선택사항 앱 분리 ✅
+
+**[`Brewfile.optional`](Brewfile.optional)** — 기본 설치에 포함되지 않는 앱.
+
+```bash
+brew bundle --file=Brewfile                # 기본 (setup.sh 가 실행)
+brew bundle --file=Brewfile.optional       # 선택사항, 필요한 기계에서만
+```
+
+| 앱 | 비고 |
+|---|---|
+| ChatGPT | 캐스크 있음. `brew bundle --file=Brewfile.optional` 로 설치 |
+| KakaoTalk | **캐스크 없음.** App Store 전용 배포 |
+
+`setup.sh` 는 본 Brewfile 만 설치하고 선택사항은 건너뛴다.
+
+### 함정: KakaoTalk 은 Homebrew 로 설치할 수 없다
+
+```
+Error: Cask 'kakaotalk' is unavailable: No Cask with this name exists.
+```
+
+App Store 전용이라 `mas` 로 다뤄야 한다 (`mas search KakaoTalk` → id **869223134**).
+Brewfile 에는 이렇게 적는다:
+
+```ruby
+brew "mas"
+mas "KakaoTalk", id: 869223134
+```
+
+**단 무인 설치가 되지 않는다.** 실제로 두 번 막혔다:
+
+| 시도 | 결과 |
+|---|---|
+| `mas install 869223134` | `sudo: a terminal is required to read the password` |
+| `osascript ... with administrator privileges` | `Error: Failed to get sudo uid (1)` |
+| `SUDO_UID`/`SUDO_USER` 를 넘겨 재시도 | 프로세스가 0% CPU 로 18분간 멈춤 (App Store 인증 대기 추정) |
+
+mas 7.x 는 설치에 root 권한을 요구하는데, root 로 실행하면 원래 사용자 uid 를 찾지 못한다.
+환경변수로 우회해도 App Store 로그인·Apple ID 연결 단계에서 막힌다.
+
+**→ App Store 앱에서 직접 설치하는 것이 확실하다.** 자동화에 매달릴 가치가 없다.
+
+**메모** — `storedownloadd` 프로세스가 떠 있는 것은 다운로드 진행의 증거가 아니다.
+항상 상주하는 시스템 데몬이라 이걸로 진행 여부를 판단하면 안 된다.
+
+---
+
+## 21. 데스크탑(Spaces) — 앱 고정과 자동 재정렬 ✅
+
+**실행: [`scripts/dock.sh`](scripts/dock.sh)** (`mru-spaces` 포함)
+
+```bash
+defaults write com.apple.dock mru-spaces -bool false && killall Dock
+```
+
+**"최근 사용 내역에 따라 Spaces 자동 재정렬"을 끈다.** 기본값은 켜짐이라 앱을 전환할 때마다
+데스크탑 순서가 섞인다. 데스크탑이 "자꾸 바뀌는" 것처럼 느껴지는 주원인.
+
+### 앱을 특정 데스크탑에 고정하기
+
+독 아이콘 우클릭 → 옵션 → 다음에 지정 → **이 데스크탑** (데스크탑이 2개 이상일 때만 메뉴가 보임)
+
+### ⚠️ 고정은 "순번"이 아니라 "그 데스크탑 자체"에 걸린다
+
+`com.apple.spaces` 의 `app-bindings` 에 `번들ID → 데스크탑 UUID` 로 저장된다.
+
+| 상황 | 결과 |
+|---|---|
+| 데스크탑을 뒤에 추가 | 유지 |
+| 순서가 바뀜 | 그 데스크탑을 따라감 (더는 "2번"이 아닐 수 있음) — **mru-spaces 끄면 대부분 해결** |
+| 고정된 데스크탑을 삭제 | 고정이 끊김 |
+| 모니터 뽑았다 다시 꽂음 | 대개 유지, macOS가 데스크탑을 재생성하면 끊김 |
+
+UUID 는 기계마다 새로 생성되므로 **이 고정은 스크립트로 다음 맥에 옮길 수 없다.** 손으로 다시 지정할 것.
+
+### 데스크탑 → 모니터 고정
+
+기본 기능으로는 불가. "디스플레이마다 개별 Spaces 사용"(기본 켜짐)이면 macOS 가 모니터별 배치를
+**기억하려고 시도**할 뿐, 명시적으로 고정하는 설정은 없다.
+
+"무조건 2번" / "이 작업공간은 외장 모니터" 가 꼭 필요하면 **AeroSpace** (작업공간을 이름으로 관리,
+`persistent-workspaces` 로 선언하면 사라지지 않음). 단 타일링 창 관리자라 Rectangle 방식과 겹친다
+→ 보류.
+
+
+---
+
+## 22. VS Code Vim — hjkl 길게 누르면 악센트 창이 뜨는 문제 ✅
+
+**실행: [`scripts/vscode.sh`](scripts/vscode.sh)** · 확장은 [`Brewfile`](Brewfile)의 `vscode "vscodevim.vim"`
+
+증상: VSCodeVim에서 `j`를 꾹 누르면 커서가 계속 내려가지 않고 `ĵ` 같은 후보 선택창이 뜬다.
+
+원인: macOS의 "길게 누르면 악센트 문자 입력" 기능. 키 반복 대신 후보창을 띄운다.
+
+```bash
+defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
+```
+
+VSCodeVim 공식 문서가 안내하는 방법이다. **VS Code에만** 적용했다 — 전역(`-g`)으로 끄면
+다른 앱에서 악센트 입력까지 사라진다.
+
+**⚠️ VS Code를 완전히 종료(⌘Q) 후 다시 열어야 적용된다.** 앱 시작 시 읽는 값이라
+"Reload Window"로는 반영되지 않는다.
+
+**메모** — Vim 확장을 손으로 설치해서 Brewfile에 빠져 있었다. 같이 추가했다.
+
+### 키 반복 속도
+
+**실행: [`scripts/keyboard-repeat.sh`](scripts/keyboard-repeat.sh)**
+
+악센트 창을 끈 뒤에도 길게 눌렀을 때 커서 이동이 느렸다. 기본 키 반복 속도 때문이다.
+
+```bash
+defaults write -g KeyRepeat -int 2          # 반복 간격, UI 최댓값
+defaults write -g InitialKeyRepeat -int 15  # 반복 시작 지연, UI 최솟값
+```
+
+`defaults`로는 UI 한계보다 더 빠르게(1 / 10) 줄 수 있지만 오타가 늘 만큼 과해서 쓰지 않았다.
+**앱 시작 시 읽는 값이라 VS Code를 다시 재시작해야 한다.** 전체 반영은 로그아웃 후 재로그인.
+
+**메모** — 악센트 창 문제(16:27 실행 / 16:33 설정)도 같은 원인이었다. 이미 떠 있는 앱은
+새 `defaults` 값을 모른다. 설정 후 "안 고쳐졌다" 싶으면 앱 재시작 여부부터 확인할 것.

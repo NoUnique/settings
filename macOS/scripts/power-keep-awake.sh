@@ -36,7 +36,8 @@ as_root() {
 case "$MODE" in
   on)
     # 전원 소스와 무관하게 잠들지 않게 한다. 화면만 꺼진다.
-    as_root "pmset -a sleep 0; pmset -a disablesleep 1; pmset -c displaysleep 10; pmset -b displaysleep 5; pmset -a disksleep 10"
+    # displaysleep: AC 60분 / 배터리 30분 (사용자 지정값. 잠금 화면 설정과 연동됨)
+    as_root "pmset -a sleep 0; pmset -a disablesleep 1; pmset -c displaysleep 60; pmset -b displaysleep 30; pmset -a disksleep 10"
     echo "    잠자기 방지 ON (AC + 배터리 모두)"
     status
     cat <<'EOF'

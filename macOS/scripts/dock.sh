@@ -30,6 +30,10 @@ APPS=(
   "/Applications/Ghostty.app"
   "/Applications/Visual Studio Code.app"
   "/Applications/Claude.app"
+  "/Applications/ChatGPT.app"
+  "/Applications/Slack.app"
+  "/Applications/Notion.app"
+  "/Applications/Figma.app"
 )
 
 # 존재하지 않는 앱은 건너뛴다 (설치 순서에 따라 없을 수 있다)
@@ -87,6 +91,11 @@ defaults write com.apple.dock autohide-time-modifier -float 0.5
 # 중복돼 보이고, 고정 목록만 두려는 의도와 어긋난다.
 # 되돌리려면: defaults write com.apple.dock show-recents -bool true && killall Dock
 defaults write com.apple.dock show-recents -bool false
+
+# 데스크탑(Spaces) 자동 재정렬 끄기.
+# 기본값은 켜짐 — 앱을 전환할 때마다 macOS가 데스크탑 순서를 최근 사용 순으로 섞는다.
+# 앱을 특정 데스크탑에 고정해도 그 데스크탑의 "순번"이 계속 바뀌는 원인.
+defaults write com.apple.dock mru-spaces -bool false
 
 killall Dock 2>/dev/null || true
 sleep 3

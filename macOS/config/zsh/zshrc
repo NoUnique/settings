@@ -72,3 +72,6 @@ setopt NO_BEEP
 #
 #    예: echo 'export SOME_TOKEN=...' >> ~/.zshrc.local
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# Unity CLI
+. "/Users/nounique/.unity/env"

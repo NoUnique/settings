@@ -104,6 +104,9 @@ fi
 
 step "패키지 설치 (Brewfile)"
 brew bundle --file=Brewfile
+# 선택사항(Brewfile.optional)은 일부러 설치하지 않는다.
+# 필요한 기계에서만: brew bundle --file=Brewfile.optional
+skip "선택사항은 건너뜀 — Brewfile.optional 참고"
 
 step "개별 설정"
 for s in scripts/*.sh; do
