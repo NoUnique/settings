@@ -12,6 +12,8 @@ cask "google-chrome"
 cask "rectangle"             # 창 배치. 설정은 scripts/rectangle.sh
 cask "visual-studio-code"    # `code` / `code-tunnel` CLI도 함께 링크된다
 cask "ghostty"               # 터미널. 설정은 scripts/ghostty.sh + config/ghostty/config
+cask "stats"                 # 메뉴 막대 CPU/GPU/메모리 모니터. 설정은 scripts/stats.sh
+cask "hiddenbar"             # 메뉴 막대 아이콘 접기/펴기. 설정은 scripts/hiddenbar.sh
 
 # --- 협업 / 디자인 ---
 cask "slack"

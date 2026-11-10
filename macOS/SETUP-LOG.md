@@ -1496,3 +1496,152 @@ defaults write -g InitialKeyRepeat -int 15  # 반복 시작 지연, UI 최솟값
 
 **메모** — 악센트 창 문제(16:27 실행 / 16:33 설정)도 같은 원인이었다. 이미 떠 있는 앱은
 새 `defaults` 값을 모른다. 설정 후 "안 고쳐졌다" 싶으면 앱 재시작 여부부터 확인할 것.
+
+---
+
+## 23. 메뉴 막대 시스템 모니터 — Stats ✅
+
+**실행: [`scripts/stats.sh`](scripts/stats.sh)** · 설치는 [`Brewfile`](Brewfile)의 `cask "stats"`
+
+메뉴 막대에 CPU/GPU/메모리 사용량을 실시간으로 띄우는 기능은 macOS에 없다.
+예전엔 iStat Menus(유료)를 썼지만, 무료 오픈소스인 **Stats**(`exelban/stats`)로 충분해서 이쪽을 골랐다.
+
+### 기본 설정 (사용자가 직접 맞춘 상태)
+
+| 항목 | 값 |
+|---|---|
+| 표시 | **CPU · GPU · RAM · 네트워크**만 |
+| 모양 | CPU/GPU/RAM = 세로 라벨 + 선 그래프, 네트워크 = 업/다운 속도 |
+| 전체 모듈(합치기) | 켬 — 메뉴 막대 아이콘 하나로 묶임 |
+| 위치 | Wi-Fi 바로 왼쪽 (아래 "메뉴 막대 순서") |
+| 로그인 시 시작 | 켬 |
+| 업데이트 확인 | 한 달에 한 번 |
+
+```
+… [CPU ⌇][GPU ⌇][RAM ⌇] ↑↓KB/s   Wi-Fi   한   100% 🔋   제어센터  시계
+```
+
+첫 실행 마법사에서는 프리셋 "확장" / 자동 시작 / 백그라운드 업데이트를 골랐다가, 이후 사용자가 설정 화면에서
+위 상태로 바꿨다. 스크립트는 최종 상태를 `defaults`로 직접 써서 마법사 없이 같은 모습으로 띄운다.
+
+### 그래프 모양 바꾸는 곳
+
+메뉴에 바로 안 보인다. **설정 창 → 왼쪽에서 모듈(CPU 등) → 오른쪽 위 스위치 옆 톱니바퀴(⚙) → `위젯` 탭**.
+미리보기를 누르면 켜지고 꺼진다. 여러 개를 같이 켤 수 있고 끌어서 순서를 바꾼다.
+(소스: `Kit/module/window.swift`의 `WidgetSelectorView`)
+
+| 모듈 | 고를 수 있는 위젯 |
+|---|---|
+| CPU | mini, line_chart, bar_chart, pie_chart, tachometer, label, icon |
+| GPU | mini, line_chart, bar_chart, tachometer, text, label, icon |
+| RAM | mini, line_chart, bar_chart, pie_chart, tachometer, memory, state, text, label, icon |
+
+`defaults` 키:
+- `<모듈>_state` — 모듈 켜기/끄기
+- `<모듈>_widget` — 켤 위젯 목록(쉼표 구분). 빈 문자열이면 모듈은 켜져 있어도 메뉴 막대에 안 보인다
+- `<모듈>_<위젯>_position` — 모듈 안 위젯 순서 (`label`이 0이라 라벨이 앞에 붙는다)
+- `CombinedModules` — 전체 모듈 합치기
+- `update-interval` — `Silent` / `At start` / `Once per day` / `Once per week` / `Once per month` / `Never`
+
+### 마법사 건너뛰기와 로그인 시 시작
+
+- `setupProcess` 또는 `runAtLoginInitialized`가 있으면 마법사를 띄우지 않는다 (`Stats/helpers.swift`).
+- **⚠️ Stats 버그** — 마법사에서 "자동 시작"을 골랐는데 앱을 재시작하자 설정의 "로그인 시 시작" 스위치가 꺼져 있었다.
+  `runAtLoginInitialized`는 있고 `LaunchAtLoginNext`가 없으면 시작할 때 `LaunchAtLogin.migrate()`가
+  옛 방식(SMLoginItem) 등록 상태(없음)를 새 방식(SMAppService)으로 옮기면서 등록을 지운다 (`Kit/helpers.swift`).
+  스크립트는 `LaunchAtLoginNext = 1`을 미리 써서 이걸 막는다.
+- 앱 스위치가 쓰는 `SMAppService.mainApp`은 셸에서 대신 켤 수 없다. 그래서 스크립트는 System Events
+  로그인 항목으로 등록한다. 이 경우 Stats 설정 화면의 스위치는 꺼진 채로 보여도 로그인 시 실행된다.
+
+### 메뉴 막대 순서
+
+**실행: [`scripts/menubar.sh`](scripts/menubar.sh)** (시스템 항목) + `scripts/stats.sh` (Stats)
+
+기본 배치: 오른쪽 끝(제어 센터·시계 제외)부터 **배터리 → 한/영 → Wi-Fi → Stats**, 그 왼쪽에 나머지 앱.
+
+메뉴 막대 아이콘 위치는 아이콘을 띄우는 앱마다 자기 `defaults`에 **오른쪽 끝에서 잰 거리(pt)**로 저장한다.
+값이 작을수록 오른쪽이다. 원하는 배치로 맞춘 이 맥에서 읽은 값:
+
+| 항목 | 도메인 | 키 | 값 |
+|---|---|---|---|
+| 배터리 | `com.apple.controlcenter` | `NSStatusItem Preferred Position Battery` | 201 |
+| 한/영 | `com.apple.TextInputMenuAgent` | `NSStatusItem Preferred Position Item-0` | 277 |
+| Wi-Fi | `com.apple.controlcenter` | `NSStatusItem Preferred Position WiFi` | 321 |
+| Stats | `eu.exelban.Stats` | `NSStatusItem Preferred Position CombinedModules` | 359 |
+
+다른 앱은 이보다 큰 값을 받아 왼쪽으로 붙는다. 값은 float 형식(`-float`)이다.
+⌘를 누른 채 아이콘을 끌면 순서를 바꿀 수 있고, 그러면 이 값도 바뀐다. 순서를 바꿨으면 스크립트 값도 고칠 것:
+
+```bash
+for d in com.apple.controlcenter com.apple.TextInputMenuAgent eu.exelban.Stats; do
+  defaults read $d | grep "Preferred Position"; done
+```
+
+**메모**
+- 외부 모니터가 연결된 상태에서는 Stats 창이 외부 모니터에 떴다. `screencapture -x`는 메인 화면만 찍는다.
+  `screencapture -D 2`로 찍거나 `displayplacer list`로 배치를 먼저 볼 것. 음수 좌표 화면에서는
+  `cliclick` 좌표 클릭이 빗나가서 System Events로 버튼 이름을 눌렀다(`click button "다음" of window 1`).
+- 처음에 Claude가 마법사를 혼자 넘기다 지적받았다. **마법사나 옵션 화면에서 고를 게 있으면 단계마다 사용자에게 물어볼 것.**
+  여기서 고른 값이 다음 맥의 기본값이 된다.
+- 사용자가 켠 "로그인 시 시작" 스위치를 Claude가 확인하지 않고 다시 눌러서 꺼버린 일이 있었다.
+  **토글은 누르기 전에 현재 상태부터 볼 것.**
+
+---
+
+## 24. 메뉴 막대 접기 — Hidden Bar ✅
+
+**실행: [`scripts/hiddenbar.sh`](scripts/hiddenbar.sh)** · 설치는 [`Brewfile`](Brewfile)의 `cask "hiddenbar"`
+
+메뉴 막대 아이콘이 많아져서 **Stats 왼쪽을 전부 접었다 폈다** 하게 했다. 사용자가 Hidden Bar를 골랐다.
+(같은 종류: Bartender(유료), Ice(무료). macOS 26에서는 셋 다 평이 엇갈린다.)
+
+```
+접힘:  ‹  [CPU][GPU][RAM] ↑↓   Wi-Fi  한  배터리   제어센터  시계
+펼침:  … Claude  ChatGPT  Notion  |  ›  [CPU][GPU][RAM] ↑↓   Wi-Fi  한  배터리
+```
+
+Hidden Bar가 띄우는 아이콘 두 개:
+- 화살표 `hiddenbar_expandcollapse` — 누르면 접기/펴기. 우클릭하면 설정 메뉴
+- 구분선 `hiddenbar_separate` — **이 왼쪽에 있는 아이콘이 접힌다.** 접을 때 구분선 길이를 화면보다 길게
+  늘려서(이 맥에서 3362pt) 왼쪽 아이콘을 화면 밖으로 밀어낸다
+
+위치는 23번의 "메뉴 막대 순서"와 같은 방식(오른쪽 끝에서 잰 거리)으로 미리 써둔다:
+
+| 항목 | 값 |
+|---|---|
+| Stats | 359 |
+| 화살표 | 365 |
+| 구분선 | 372 |
+
+옵션 (`com.dwarvesv.minimalbar`):
+
+| 키 | 값 | 비고 |
+|---|---|---|
+| `isAutoStart` | true | 로그인 시 시작. 앱이 시작할 때 이 값을 보고 스스로 등록한다(SMAppService). Stats와 달리 셸에서 값만 써도 된다 |
+| `isShowPreferences` | false | 기본값 true면 실행할 때마다 설정 창이 뜬다 |
+| `isAutoHide` / `numberOfSecondForAutoHide` | 앱 기본값 (켬 / 10초) | 펼친 뒤 10초 지나면 다시 접힘 |
+| `hoverToExpand` | 앱 기본값 (끔) | 클릭해야 펼침 |
+
+기본값은 소스(`dwarvesf/hidden`의 `AppDelegate.defaultPreferenceValues`)에서 확인했다.
+
+**메모**
+- 처음 실행하면 접힌 상태로 시작한다. 실행 직후 스크린샷에 화살표가 안 보여도 몇 초 뒤 다시 찍으면 보인다.
+- 펼침/접힘 확인은 System Events로 구분선 크기를 읽으면 된다. 접힘이면 수천 pt, 펼침이면 22pt 정도다:
+  `tell process "Hidden Bar" to get size of every menu bar item of menu bar 2`
+- AX `click`(AXPress)으로는 토글되지 않았다. `cliclick`으로 좌표를 눌러야 했다.
+
+---
+
+## 25. 메뉴 막대 시계 24시간제 ✅
+
+**실행: [`scripts/menubar.sh`](scripts/menubar.sh)**
+
+GUI 경로: 시스템 설정 > 일반 > 날짜 및 시간 > 24시간 형식
+
+```bash
+defaults write -g AppleICUForce24HourTime -bool true          # 시스템 전체 시간 형식
+defaults write com.apple.menuextra.clock Show24Hour -bool true # 메뉴 막대 시계
+killall ControlCenter                                         # 메뉴 막대 시계 다시 읽기
+```
+
+`11월 11일 (수) 오전 1:38` → `11월 11일 (수) 01:38`
