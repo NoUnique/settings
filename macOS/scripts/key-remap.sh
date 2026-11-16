@@ -46,10 +46,22 @@ set_hotkey() {
     </dict>'
 }
 
+# 한글 입력기 App Nap 끄기
+#   한동안 한/영을 안 바꾸면 macOS가 한글 입력기를 App Nap으로 재운다. 그러면 다음 전환 때
+#   입력기가 깨어나는 동안 반응이 늦다. 입력기만 대상으로 하므로 다른 앱에는 영향이 없다.
+#   macOS 26에서 앱 이름은 KoreanIM.app이지만 실제로 도는 입력기(KIM_Extension)의 ID는
+#   여전히 com.apple.inputmethod.Korean이다. 새 값은 입력기를 다시 띄워야 읽는다.
+#   일반 종료 신호(TERM)는 무시해서 -9로 끈다. 다음에 한/영을 누르면 macOS가 다시 띄운다.
+set_ime_nosleep() {
+  defaults write com.apple.inputmethod.Korean NSAppSleepDisabled -bool true
+  pkill -9 -x KIM_Extension 2>/dev/null || true
+}
+
 case "${1:-on}" in
   on)
     hidutil property --set "$MAPPING" >/dev/null
     set_hotkey
+    set_ime_nosleep
 
     mkdir -p "$HOME/Library/LaunchAgents"
     cat > "$PLIST" <<EOF
@@ -91,5 +103,6 @@ echo -n "    이전 입력 소스 단축키: "
 defaults read com.apple.symbolichotkeys AppleSymbolicHotKeys 2>/dev/null \
   | awk '/^    60 =/,/^    };/' | grep -A4 parameters | tr -d '\n ,()' | sed 's/parameters//' || echo "(미설정)"
 echo
+echo "    한글 입력기 App Nap: $(defaults read com.apple.inputmethod.Korean NSAppSleepDisabled 2>/dev/null || echo 미설정) (1 = 끔)"
 launchctl print "gui/$(id -u)/${LABEL}" >/dev/null 2>&1 \
   && echo "    LaunchAgent: 등록됨" || echo "    LaunchAgent: 없음"

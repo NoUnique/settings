@@ -836,6 +836,24 @@ HID usage 코드 (`0x7000000xx` = Keyboard/Keypad page):
 입력 소스에서 빼야 F18 토글이 깨지지 않는다(3개를 순환하게 됨).
 → 이번엔 그냥 두기로 함.
 
+### 추가: 한/영 전환이 가끔 늦는 문제 — 한글 입력기 App Nap 끄기 ✅
+
+증상: 우측 ⌘(F18)로 한/영을 바꿀 때 가끔 반응이 늦다. 한동안 전환을 안 하다가 처음 누를 때 특히 그렇다.
+
+원인(커뮤니티 진단): macOS가 쓰지 않는 한글 입력기를 App Nap으로 재우고, 전환할 때 깨어나는 동안 늦다.
+F18 방식 자체의 문제는 아니다. ([클리앙 글](https://www.clien.net/service/board/lecture/19179255))
+
+```bash
+defaults write com.apple.inputmethod.Korean NSAppSleepDisabled -bool true   # 한글 입력기만 대상
+pkill -9 -x KIM_Extension    # 새 값을 읽게 재시작. 한/영을 누르면 macOS가 다시 띄운다
+```
+
+- macOS 26에서 입력기 앱 이름은 `KoreanIM.app`(ID `com.apple.KIM-Container`)으로 바뀌었다. 하지만 실제로 도는
+  프로세스는 `KoreanIM.app/Contents/PlugIns/KIM_Extension.appex`이고 ID는 여전히 `com.apple.inputmethod.Korean`이다.
+- `KIM_Extension`은 일반 종료 신호(TERM)를 무시해서 `-9`가 필요하다.
+- 전역(`-g`)으로 끄는 방법도 있지만 모든 앱이 안 자서 배터리를 더 먹는다.
+- 효과는 사용자 체감 보고 수준이고 측정으로 검증된 건 아니다.
+
 ---
 
 ## 13. 메뉴 막대 — 배터리 백분율 표시 ✅
