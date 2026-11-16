@@ -45,6 +45,7 @@ Claude가 **하지 않는 것**: 비밀번호·passphrase 입력, TCC 권한 토
 | 시점 | 무엇 | 왜 사람이 |
 |---|---|---|
 | 시작 전 | 손쉬운 사용: 소문자 `claude` 켜기 | TCC |
+| 시작 전 | 선택 앱(Brewfile.optional) 설치 여부 — setup.sh가 하나씩 묻는다 | 기계마다 다름 |
 | 시작 전 | 화면 기록: `+`로 `~/Library/Application Support/Claude/claude-code/<버전>/<해시>/claude.app` 추가 → **Claude 앱 재시작** | TCC. 목록에 자동으로 안 뜬다 |
 | setup.sh 앞 | `sudo -v` 비밀번호 (한/영 확인) | 자격증명 |
 | setup.sh 뒤 | 손쉬운 사용: **Rectangle**, **Ghostty** 켜기 → 각 앱 재시작 | TCC |
@@ -1465,7 +1466,13 @@ brew bundle --file=Brewfile.optional       # 선택사항, 필요한 기계에�
 | ChatGPT | 캐스크 있음. `brew bundle --file=Brewfile.optional` 로 설치 |
 | KakaoTalk | **캐스크 없음.** App Store 전용 배포 |
 
-`setup.sh` 는 본 Brewfile 만 설치하고 선택사항은 건너뛴다.
+`setup.sh` 는 시작할 때(sudo 입력 전) **선택 앱을 하나씩 물어보고** 고른 것만 설치한다.
+App Store 앱(KakaoTalk)은 묻지 않고 "끝난 뒤 직접 설치" 안내만 한다.
+
+**원칙: 선택사항은 사람에게 묻는다.** 기본 설치로 올리거나 조용히 건너뛰지 않는다.
+두 번째 맥(2026-11-17)에서는 setup.sh가 묻지 않고 건너뛰어 ChatGPT가 빠졌고,
+`dock.sh`는 ChatGPT를 Dock에 넣으려다 "없는 앱"으로 건너뛰었다. 선택 앱이라도 설치했다면
+Dock 구성은 `dock.sh`를 다시 돌리면 맞춰진다(없는 앱은 건너뛰므로 목록은 그대로 둔다).
 
 ### 함정: KakaoTalk 은 Homebrew 로 설치할 수 없다
 
@@ -1876,9 +1883,31 @@ R=$(mktemp -d); tar -xzf "$A" -C "$R" --include='*/.ssh/*'
   `gh auth login`에서 기존 `~/.ssh/id_ed25519.pub`를 업로드(제목 `NoUnique-MacbookAirM1`)해 해결.
 - 이 키는 passphrase가 없다.
 
+### 선택 앱(ChatGPT)이 묻지도 않고 빠짐
+
+`setup.sh`가 `Brewfile.optional`을 건너뛰어 ChatGPT가 설치되지 않았고 Dock에서도 빠졌다.
+Claude는 이걸 "기본 설치로 올릴까"로 물었는데, **선택사항은 기본으로 올리지 않고 기계마다 사람에게 묻는 게 맞다.**
+→ `setup.sh`가 시작할 때 선택 앱을 하나씩 묻도록 수정(20번). 이 맥에서는 설치했다.
+
+```bash
+brew install --cask chatgpt     # OpenAI OpCo, LLC 서명·공증 확인
+bash scripts/dock.sh            # Dock에 ChatGPT 반영
+```
+
+### 권한을 켠 뒤에는 확인부터 — 묻기 전에 화면을 본다
+
+사람이 Ghostty 손쉬운 사용 권한을 이미 켰는데 Claude가 확인 없이 "켜달라"고 다시 물었다.
+**권한 상태는 시스템 설정 손쉬운 사용 화면을 캡처해 직접 확인한다.** 켜져 있으면 앱만 재시작한다.
+
+```bash
+# 창이 없을 때만 재시작 (Ghostty는 숨김 실행이라 보통 창이 없다)
+osascript -e 'tell application "System Events" to count windows of process "ghostty"'   # → 0
+killall ghostty && open -g -j -a Ghostty
+```
+
+확인: Finder를 앞에 둔 채 ⌥⌘T → `ghostty` 창 수가 0 → 2로 늘면 전역 단축키가 동작한 것.
+
 ### 미해결
 
-- `dock.sh`는 `ChatGPT.app`을 Dock에 넣는데 Brewfile에서는 선택사항(`Brewfile.optional`)이라
-  설치되지 않아 Dock에서 빠진다. 기본 설치로 올릴지 Dock에서 뺄지 결정 필요.
 - `brew doctor`: Command Line Tools 새 버전 경고. 소프트웨어 업데이트로 올릴 것.
 

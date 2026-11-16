@@ -58,6 +58,18 @@ EOF
 read -r -p $'\n  켰으면 Enter (건너뛰려면 s) > ' a
 [ "$a" = "s" ] || check
 
+step "선택 앱 (Brewfile.optional) — 지금 하나씩 정한다"
+# 선택사항은 기계마다 다르므로 묻지 않고 넘어가지 않는다.
+# 가운데 자동 구간을 멈추지 않도록 질문은 여기(앞)에서 끝낸다.
+OPTIONAL_CASKS=()
+while IFS= read -r c; do
+  read -r -p "  $c 설치할까? [y/N] > " yn </dev/tty
+  [[ "$yn" =~ ^[Yy]$ ]] && OPTIONAL_CASKS+=("$c")
+done < <(sed -n 's/^cask "\([^"]*\)".*/\1/p' Brewfile.optional)
+if grep -q '^mas ' Brewfile.optional; then
+  echo "  ※ App Store 앱(KakaoTalk 등)은 자동 설치하지 않는다 — 끝난 뒤 App Store에서 직접 설치 (SETUP-LOG 20번)"
+fi
+
 step "sudo 인증 (한 번만 입력하면 이후 전부 무인)"
 echo "  ※ 한/영 상태 확인. 비밀번호는 화면에 표시되지 않는다."
 sudo -v
@@ -104,9 +116,11 @@ fi
 
 step "패키지 설치 (Brewfile)"
 brew bundle --file=Brewfile
-# 선택사항(Brewfile.optional)은 일부러 설치하지 않는다.
-# 필요한 기계에서만: brew bundle --file=Brewfile.optional
-skip "선택사항은 건너뜀 — Brewfile.optional 참고"
+if [ ${#OPTIONAL_CASKS[@]} -gt 0 ]; then
+  brew install --cask "${OPTIONAL_CASKS[@]}" && ok "선택 앱 설치: ${OPTIONAL_CASKS[*]}"
+else
+  skip "선택 앱 없음"
+fi
 
 step "개별 설정"
 for s in scripts/*.sh; do
