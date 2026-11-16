@@ -55,6 +55,18 @@ Claude가 **하지 않는 것**: 비밀번호·passphrase 입력, TCC 권한 토
 | 수시 | "claude가 ○○을 제어하려 함"(자동화) 창 | TCC. 가능하면 이런 창이 안 뜨는 방법을 쓴다 |
 | 복원 시 | NAS SMB 로그인 | 자격증명 |
 
+### 경고창 처리 규칙 — 앱을 실행하거나 설치한 직후엔 반드시 화면을 확인한다
+
+두 번째 맥에서 경고창이 떠 있는데 Claude가 모르고 다음 작업으로 넘어가 사람이 매번 지적해야 했다.
+
+- **앱을 실행(`open -a`)·설치·재시작한 직후, GUI를 건드리는 스크립트를 돌린 직후에는
+  `screencapture`로 화면을 확인한다.** 창이 떠 있으면 다음 작업으로 넘어가지 않는다.
+- Claude가 바로 처리하는 창: 출처가 확인된 앱의 첫 실행 확인("인터넷에서 다운로드된 앱"),
+  로컬 네트워크 요청 거부, 앱 자체 안내 창(이 문서에 결정이 기록된 것).
+- 사람에게 즉시 알리는 창: TCC 권한 부여(손쉬운 사용·화면 기록·자동화·앱 관리), 비밀번호,
+  이 문서에 결정이 없는 선택지. **알릴 때는 무슨 창인지, 왜 떴는지, 권장 선택을 같이 말한다.**
+- 처리한 창은 이 문서에 기록한다. 다음 맥에서는 결정이 이미 있으므로 묻지 않고 처리한다.
+
 ## 머신 정보
 
 | 항목 | 값 |
@@ -1797,6 +1809,19 @@ brew install --cask google-chrome
 ```
 
 **교훈**: 셋업 전에 브라우저 등을 수동 설치했다면 Brewfile에 있는 앱인지 확인하고 지운 뒤 진행한다.
+
+**재설치 후 첫 실행 창**: brew로 설치한 앱도 처음 열면
+"'Google Chrome'은(는) 인터넷에서 다운로드된 앱입니다. 열겠습니까?"(Gatekeeper)가 뜬다.
+cask가 quarantine 속성을 붙이기 때문이다. 서명을 확인하고 **열기**를 누른다.
+
+```bash
+spctl -a -vv "/Applications/Google Chrome.app"
+# → accepted / source=Notarized Developer ID / origin=Developer ID Application: Google LLC (EQHXZ8M8AV)
+```
+
+Brewfile의 다른 앱(Rectangle, Ghostty, Stats, Hidden Bar, Slack, Notion, Figma, VS Code)도
+처음 열 때 같은 창이 뜬다. 셋업 중 스크립트가 앱을 띄우면(`open -a`) 그 자리에서 뜨므로 바로 확인한다.
+프로필·로그인 정보는 `~/Library/Application Support/Google/Chrome`에 있어 앱을 지웠다 깔아도 유지됐다.
 
 ### 한/영 키 — symbolichotkeys가 반영되지 않음
 
