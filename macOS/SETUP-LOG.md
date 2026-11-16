@@ -1645,3 +1645,25 @@ killall ControlCenter                                         # 메뉴 막대 �
 ```
 
 `11월 11일 (수) 오전 1:38` → `11월 11일 (수) 01:38`
+
+## 26. 화면보호기 중 VS Code 작업이 멈추는 문제 — App Nap 끄기 ✅
+
+**실행: [`scripts/vscode.sh`](scripts/vscode.sh)**
+
+증상: VS Code에서 에이전트(Codex 등) 작업을 돌려두면 화면보호기가 켜진 동안 멈춘 것처럼 보인다.
+
+컴퓨터가 잠드는 건 아니다. 이 맥은 시스템 잠자기가 꺼져 있다 (`pmset -g`의 `SleepDisabled 1`, `sleep 0`).
+원인은 App Nap이다. 화면보호기가 창을 모두 가리면 macOS가 VS Code를 아무도 안 보는 앱으로 보고
+타이머·네트워크·CPU를 아껴 쓰게 한다. Claude 데스크톱 앱은 스스로 App Nap에서 빠지는 요청을 걸어두지만
+(`pmset -g assertions`에 `NoIdleSleepAssertion named: "Electron"`), VS Code는 아무것도 걸지 않는다.
+
+```bash
+defaults write com.microsoft.VSCode NSAppSleepDisabled -bool true   # VS Code만 App Nap 제외
+```
+
+- VS Code를 완전히 종료(⌘Q)했다 다시 열어야 적용된다.
+- 전역(`-g`)으로 끄지 않는다. 모든 앱이 안 자서 배터리를 더 먹는다.
+- 한계: Chromium이 안 보이는 창의 화면 처리를 늦추는 건 별개라 이 설정으로는 안 꺼진다. 에이전트 본체는 별도 프로세스라 영향이 적다.
+- 멈춘 것처럼 보이는 다른 원인: 명령 실행 승인 대기. 화면이 꺼져 있으면 승인 창을 못 본다.
+
+참고 타이머 (이 맥 현재 값): 화면보호기 30분, 화면 꺼짐 60분(배터리 30분), 화면보호기 시작 1시간 뒤 잠금. 잠금 상태에서도 프로그램은 계속 돈다.
