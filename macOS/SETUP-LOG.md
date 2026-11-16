@@ -36,6 +36,25 @@ mac-setup/
 Claude가 **하지 않는 것**: 비밀번호·passphrase 입력, TCC 권한 토글 클릭.
 전자는 자격증명이고 후자는 "Claude에게 권한을 줄지"를 결정하는 스위치라, 사람 몫이다.
 
+### 사람 개입 체크리스트 — 시작 전에 전부 알려주고, 필요한 순간에 바로 말할 것
+
+두 번째 맥(2026-11-17)에서 이 목록을 미리 공유하지 않아 사람이 사후에 하나씩 발견했다.
+**Claude는 셋업을 시작하기 전에 아래 표를 사용자에게 먼저 보여주고, 각 항목이 필요해지는
+순간 즉시 알린다.** 화면에 권한/확인 창이 뜨면 기다리지 말고 바로 캡처해서 보고한다.
+
+| 시점 | 무엇 | 왜 사람이 |
+|---|---|---|
+| 시작 전 | 손쉬운 사용: 소문자 `claude` 켜기 | TCC |
+| 시작 전 | 화면 기록: `+`로 `~/Library/Application Support/Claude/claude-code/<버전>/<해시>/claude.app` 추가 → **Claude 앱 재시작** | TCC. 목록에 자동으로 안 뜬다 |
+| setup.sh 앞 | `sudo -v` 비밀번호 (한/영 확인) | 자격증명 |
+| setup.sh 뒤 | 손쉬운 사용: **Rectangle**, **Ghostty** 켜기 → 각 앱 재시작 | TCC |
+| setup.sh 뒤 | `sysadminctl -screenLock 3600 -password -` | 관리자 비밀번호 |
+| setup.sh 뒤 | `gh auth login` (SSH, 기존 키 업로드 또는 생성) | 자격증명 |
+| setup.sh 뒤 | 기본 브라우저 Chrome 지정 | 시스템 확인 창 |
+| 수시 | "로컬 네트워크 기기 찾기" 허용 창 → **기본은 허용 안 함**, 꼭 필요한 것(NAS 등)만 허용 | 사용자 방침 |
+| 수시 | "claude가 ○○을 제어하려 함"(자동화) 창 | TCC. 가능하면 이런 창이 안 뜨는 방법을 쓴다 |
+| 복원 시 | NAS SMB 로그인 | 자격증명 |
+
 ## 머신 정보
 
 | 항목 | 값 |
@@ -484,6 +503,29 @@ Rectangle 0.98. 설치 후 **손쉬운 사용 권한**을 켜야 동작한다
 (시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용 > Rectangle).
 
 첫 실행 시 단축키 프리셋을 묻는다 → **권장 설정** 선택.
+
+### 함정: "macOS 타일 정리 기능과 충돌" 창 (2026-11-17, 두 번째 맥에서 발견)
+
+손쉬운 사용 권한을 켜고 Rectangle을 다시 띄우면, 화면 가장자리 드래그 정렬이 Rectangle과
+macOS 양쪽에서 켜져 있다며 셋 중 하나를 고르라는 창이 뜬다
+(macOS의 기능 끄기 / Rectangle의 기능 끄기 / 무시).
+
+→ **드래그 정렬은 macOS, 단축키는 Rectangle.** macOS 쪽이 애니메이션이 자연스럽다.
+
+```bash
+defaults write com.knollsoft.Rectangle windowSnapping -int 2      # Rectangle 드래그 끔
+defaults write com.apple.WindowManager EnableTilingByEdgeDrag -bool true
+defaults write com.apple.WindowManager EnableTopTilingByEdgeDrag -bool true
+defaults write com.apple.WindowManager EnableTilingOptionAccelerator -bool true
+```
+
+**⚠️ `windowSnapping`은 3상태 값이다 (0=미설정, 1=켬, 2=끔).** `-bool false`로 쓰면 0(미설정)이
+되어 Rectangle이 "켜짐"으로 취급하고, **실행할 때마다 macOS의 위쪽 가장자리 타일링
+(`EnableTopTilingByEdgeDrag`)을 조용히 0으로 꺼버린다.** 바이너리 문자열
+"Automatically disabling macOS top edge tiling to resolve conflict"로 확인했고,
+`-int 2`로 바꾸자 재실행 후에도 값이 유지됐다.
+
+`rectangle.sh`가 이 값을 미리 써서 충돌 창이 뜨지 않게 한다.
 (Spectacle 프리셋은 2018년 단종된 이전 앱의 배열을 재현한 것으로, 조합키가 ⌥⌘ 기반이라
 앱 단축키와 충돌이 잦다. 그 앱을 쓰던 사람의 손버릇 보존용.)
 
@@ -816,6 +858,13 @@ HID usage 코드 (`0x7000000xx` = Keyboard/Keypad page):
 로그인 시 재적용한다(`RunAtLoad`). 스크립트의 `on`이 등록까지 처리한다.
 
 `symbolichotkeys`는 파일에 저장되지만 **완전히 반영되려면 로그아웃이 필요할 수 있다.**
+
+**두 번째 맥(2026-11-17)에서 실제로 걸렸다** — 매핑·단축키 값이 다 들어가 있는데 우측 ⌘가 아무 일도
+안 했다. 로그아웃 대신 아래 명령으로 즉시 반영됐고, `key-remap.sh`에 넣었다:
+
+```bash
+/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+```
 
 **메모**
 - ⚠️ 우측 Command는 더 이상 수식키가 아니다. `⌘C` 등은 좌측 Command만 동작한다.
@@ -1692,3 +1741,119 @@ defaults write com.microsoft.VSCode NSAppSleepDisabled -bool true   # VS Code만
 - 멈춘 것처럼 보이는 다른 원인: 명령 실행 승인 대기. 화면이 꺼져 있으면 승인 창을 못 본다.
 
 참고 타이머 (이 맥 현재 값): 화면보호기 30분, 화면 꺼짐 60분(배터리 30분), 화면보호기 시작 1시간 뒤 잠금. 잠금 상태에서도 프로그램은 계속 돈다.
+
+---
+
+## 27. 두 번째 맥 셋업에서 생긴 문제 전체 기록 (2026-11-17)
+
+MacBook Air M1(`NoUnique-MacbookAirM1`)을 밀고 이 저장소로 다시 셋업했다. 막힌 지점을 전부 남긴다.
+각 항목의 해결은 해당 스크립트에 반영했다.
+
+### 저장소를 받는 순서 — git 스텁을 건드리지 말 것
+
+CLT가 없는 상태에서 `/usr/bin/git`을 실행하면(`git --version` 포함) **CLT 설치 창이 뜬다.**
+`/usr/bin/git`은 진짜 git이 아니라 설치 유도 스텁이다. `setup.sh --check`도 같은 이유로 CLT 설치 전에는 돌리지 않는다.
+
+저장소 위치는 `~/_GIT_REPO/settings`로 고정한다(`~/.zshrc`, Ghostty 설정이 이 경로로 링크된다).
+
+```bash
+# 1) git 없이 압축본으로 받는다
+mkdir -p ~/_GIT_REPO/settings
+curl -fsSL https://codeload.github.com/NoUnique/settings/tar.gz/refs/heads/master \
+  | tar -xz -C ~/_GIT_REPO/settings --strip-components=1
+~/_GIT_REPO/settings/macOS/setup.sh
+
+# 2) brew git이 생기면 같은 자리에서 git 저장소로 바꾼다 (경로가 안 바뀌어 링크가 유지된다)
+cd ~/_GIT_REPO/settings
+git init -b master && git remote add origin https://github.com/NoUnique/settings.git
+git fetch origin && git reset origin/master && git branch -u origin/master
+# 3) SSH 인증이 끝나면
+git remote set-url origin git@github.com:NoUnique/settings.git
+```
+
+### 권한(0번) — 화면 기록은 목록에 안 뜬다
+
+- 손쉬운 사용은 소문자 `claude`를 켜면 바로 반영됐다.
+- 화면 기록은 `screencapture`가 실패만 하고 **요청 창을 띄우지 않아** 목록에 `claude`가 나타나지 않았다.
+  `+`로 `claude.app`을 직접 추가하고 Claude 앱을 재시작해야 했다.
+- 권한 없이 `setup.sh`를 돌리면 `notifications-off.sh`가 `-1719`(보조 접근 불허)로 실패하고
+  `notifications-clear.sh`도 경고만 내고 지나간다. **setup.sh는 실패해도 멈추지 않으므로**
+  권한을 켠 뒤 두 스크립트를 다시 돌렸다.
+
+### Chrome — 외부에서 설치된 앱 위에 cask를 깔면 실패
+
+Safari로 받은 DMG로 Chrome이 이미 설치돼 있었다(`com.apple.quarantine`에 `Safari`).
+그 위에서 `brew bundle`이 `sudo chgrp -hR admin "/Applications/Google Chrome.app"`을 하다
+`Operation not permitted`로 실패 → cask 미등록, `brew bundle check` 계속 실패.
+
+macOS의 **앱 관리(App Management)** 보호 때문이다. 다른 경로로 설치된 앱 번들은 sudo로도 고칠 수 없다.
+
+**해결**: 외부 설치본을 지우고 brew로 다시 설치. 이렇게 하면 sudo도 묻지 않는다.
+
+```bash
+osascript -e 'tell application "Google Chrome" to quit'
+rm -rf "/Applications/Google Chrome.app"     # 프로필은 ~/Library에 남는다
+brew install --cask google-chrome
+```
+
+**교훈**: 셋업 전에 브라우저 등을 수동 설치했다면 Brewfile에 있는 앱인지 확인하고 지운 뒤 진행한다.
+
+### 한/영 키 — symbolichotkeys가 반영되지 않음
+
+12번 항목 참고. 값은 다 들어갔는데 우측 ⌘가 아무 일도 안 했다.
+`activateSettings -u`로 즉시 반영 → `key-remap.sh`에 추가.
+
+### zshrc — 기계 전용 줄이 다른 맥에서 오류
+
+`. "/Users/nounique/.unity/env"`(Unity 설치기가 넣은 줄)가 Unity 없는 맥에서
+`no such file or directory`를 냈다. `[[ -f ~/.unity/env ]] && . ~/.unity/env`로 바꿨다.
+**설치 프로그램이 `.zshrc`에 줄을 추가하면 그 줄은 이 저장소 파일에 들어간다**(심볼릭 링크라서).
+기계 전용이면 `~/.zshrc.local`로 옮기거나 존재 검사를 붙일 것.
+
+### Rectangle — 타일 충돌 창, 그리고 3상태 값
+
+9번 항목 참고. 드래그 정렬은 macOS(애니메이션), 단축키는 Rectangle.
+`windowSnapping`은 `-int 2`(끔)이어야 한다. `-bool false`는 "미설정"이라 Rectangle이
+실행할 때마다 macOS 위쪽 가장자리 타일링을 꺼버린다.
+
+### Ghostty / 잠금 화면 — setup.sh 안내에서 빠져 있던 사람 단계
+
+- Ghostty의 Quick Terminal(⌥⌘T)은 손쉬운 사용 권한이 있어야 전역으로 동작한다(15번 ③).
+  `setup.sh` 마지막 안내에 Rectangle만 있어서 놓쳤다 → 안내에 추가.
+- 잠금 화면 암호 요구는 관리자 인증이 필요해 스크립트가 설정하지 않는다(19번).
+  기본값 300초로 남아 있었다 → 안내에 `sysadminctl -screenLock 3600 -password -` 추가.
+  설정 직후 `status`가 잠깐 이전 값을 보여주니 몇 초 뒤 다시 확인한다.
+
+### 로컬 네트워크 / 자동화 권한 창
+
+- Stats가 "로컬 네트워크 기기 찾기"를 요청 → **허용 안 함**. 메뉴 막대 모니터에 필요 없다.
+  방침: 로컬 네트워크는 기본 거부, NAS 접근처럼 꼭 필요한 것만 허용.
+- Rectangle 동작 확인용으로 `tell application "Finder"`를 쓰자 "claude가 Finder를 제어하려 함" 창이 떴다.
+  검증 목적이라면 앱 자동화 권한이 필요 없는 방법(System Events로 창 위치 읽기 등)을 쓴다.
+
+### SSH 키 — NAS 백업에서 복원
+
+이전에 밀기 전 백업: `smb://NoUnique-NAS/backup/NoUnique-MacBookAirM1/2026-11-17_012204`
+(`백업_복원안내.txt` 참고). `.ssh`는 `Archives/05_dotfiles.tar.gz`에 있다.
+
+```bash
+open smb://NoUnique-NAS.local                          # 로그인은 사람이
+A=/Volumes/backup/NoUnique-MacBookAirM1/<날짜>/Archives/05_dotfiles.tar.gz
+shasum -a 256 "$A"                                     # _logs/05_dotfiles.result.json 의 archive_sha256 과 대조
+R=$(mktemp -d); tar -xzf "$A" -C "$R" --include='*/.ssh/*'
+# agent/ (소켓) 제외하고 복사 → chmod 700 ~/.ssh, 개인키·config 600, .pub 644
+```
+
+- `~/.ssh/config`는 덮어쓰지 말고 합친다: 이 저장소의 github.com 블록(`UseKeychain`)
+  + 백업의 서버 호스트(`nounique-server`, `nounique-workstation1`) + colima `Include`.
+- **복원한 키가 GitHub에 등록돼 있지 않았다.** 계정에는 6번에서 만든 다른 키만 있었다.
+  `ssh -v`로 키를 제시했는데 거부되는 걸 확인하고, `https://github.com/NoUnique.keys`로 대조했다.
+  `gh auth login`에서 기존 `~/.ssh/id_ed25519.pub`를 업로드(제목 `NoUnique-MacbookAirM1`)해 해결.
+- 이 키는 passphrase가 없다.
+
+### 미해결
+
+- `dock.sh`는 `ChatGPT.app`을 Dock에 넣는데 Brewfile에서는 선택사항(`Brewfile.optional`)이라
+  설치되지 않아 Dock에서 빠진다. 기본 설치로 올릴지 Dock에서 뺄지 결정 필요.
+- `brew doctor`: Command Line Tools 새 버전 경고. 소프트웨어 업데이트로 올릴 것.
+

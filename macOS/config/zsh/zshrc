@@ -74,4 +74,4 @@ setopt NO_BEEP
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
 # Unity CLI
-. "/Users/nounique/.unity/env"
+[[ -f ~/.unity/env ]] && . ~/.unity/env

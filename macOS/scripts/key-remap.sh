@@ -83,6 +83,8 @@ case "${1:-on}" in
 EOF
     launchctl bootout "gui/$(id -u)/${LABEL}" 2>/dev/null || true
     launchctl bootstrap "gui/$(id -u)" "$PLIST"
+    # symbolichotkeys 변경을 로그아웃 없이 즉시 반영 (이걸 안 하면 F18이 아무 일도 안 한다)
+    /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u 2>/dev/null || true
     echo "    적용 완료 (로그인 시 자동 재적용)"
     echo "    ※ symbolichotkeys 변경은 로그아웃 후 완전히 반영된다."
     ;;

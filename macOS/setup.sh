@@ -130,8 +130,13 @@ cat <<'EOF'
   3) Chrome을 기본 브라우저로
        시스템 설정 > 데스크탑 및 Dock > 기본 웹 브라우저
 
-  4) Rectangle 손쉬운 사용 권한
-       시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용 > Rectangle
+  4) 손쉬운 사용 권한 — Rectangle, Ghostty (켠 뒤 앱 재시작)
+       시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용
+       Ghostty는 목록에 없으면 + 로 /Applications/Ghostty.app 추가
+       (없으면 Quick Terminal ⌥⌘T 가 Ghostty에 포커스 있을 때만 동작)
+
+  5) 잠금 화면 암호 요구 1시간 (관리자 비밀번호 필요)
+       sysadminctl -screenLock 3600 -password -
 EOF
 
 step "완료"

@@ -52,6 +52,16 @@ clear_sc lastThird         # 기본 ⌃⌥G
 clear_sc firstTwoThirds    # 기본 ⌃⌥E 였음 → E는 첫번째 1/4 이 가져감
 clear_sc centerTwoThirds   # 기본 ⌃⌥R
 
+# --- 가장자리 드래그 정렬은 macOS 기본 기능으로 (Rectangle 쪽을 끈다) ---
+# 둘 다 켜져 있으면 Rectangle이 첫 실행 때 "macOS 타일 정리 기능과 충돌" 창을 띄운다.
+# macOS 쪽이 애니메이션이 자연스러워서 드래그는 macOS, 단축키는 Rectangle로 나눈다.
+# ⚠️ windowSnapping은 3상태 값이다: 0=미설정, 1=켬, 2=끔. -bool false(=0)는 "미설정"이라
+#    Rectangle이 켜진 걸로 보고, 실행할 때마다 macOS 위쪽 가장자리 타일링을 몰래 꺼버린다.
+defaults write "$D" windowSnapping -int 2
+defaults write com.apple.WindowManager EnableTilingByEdgeDrag -bool true
+defaults write com.apple.WindowManager EnableTopTilingByEdgeDrag -bool true
+defaults write com.apple.WindowManager EnableTilingOptionAccelerator -bool true
+
 open -a Rectangle
 
 cat <<'EOF'
