@@ -1493,6 +1493,13 @@ defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
 VSCodeVim 공식 문서가 안내하는 방법이다. **VS Code에만** 적용했다 — 전역(`-g`)으로 끄면
 다른 앱에서 악센트 입력까지 사라진다.
 
+> **2026-11-17 변경: 전역으로 바꿨다.** VS Code 밖에서도 영문 키를 길게 누르면 악센트 창이 떠서
+> 반복 입력이 되도록 모든 앱에서 껐다 ([`scripts/keyboard-repeat.sh`](scripts/keyboard-repeat.sh)).
+> ```bash
+> defaults write -g ApplePressAndHoldEnabled -bool false
+> ```
+> 이미 떠 있는 앱은 재시작해야 반영된다. 악센트 문자는 ⌥ 조합(⌥E 후 E → é)으로 넣을 수 있다.
+
 **⚠️ VS Code를 완전히 종료(⌘Q) 후 다시 열어야 적용된다.** 앱 시작 시 읽는 값이라
 "Reload Window"로는 반영되지 않는다.
 
