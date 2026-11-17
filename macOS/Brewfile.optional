@@ -14,7 +14,7 @@ cask "chatgpt"
 # ⚠️ macOS 앱 관리 보호 때문에 brew 설치가 "성공"이라고 나와도 실제론 깨진다 (SETUP-LOG 3D 프린팅 절).
 #    설치 전에 사람이: 앱 관리에서 "Install Autodesk Fusion" 켜기 → 설치 프로그램을 open 으로 실행.
 cask "autodesk-fusion"
-# Bambu Studio: 첫 실행 마법사(지역/프린터/노즐) + Bambu 계정 로그인(사람).
+# Bambu Studio: 프린터는 P2S. 첫 실행 마법사(아시아 태평양 / 프린터 목록 '모두 지우기' 후 P2S만) + Bambu 계정 가입·로그인(사람).
 #   로컬 네트워크 요청은 "허용" — LAN으로 프린터를 찾고 출력하는 데 필요한 예외.
 cask "bambu-studio"
 
