@@ -1909,7 +1909,11 @@ killall ghostty && open -g -j -a Ghostty
 
 ### 미해결
 
-- `brew doctor`: Command Line Tools 새 버전 경고. 소프트웨어 업데이트로 올릴 것.
+- `brew doctor`: Command Line Tools 새 버전 경고 → **이 macOS에선 해결 불가, 무시한다.**
+  - 설치된 CLT는 26.6(macOS 26.5.1용 최신). brew가 요구하는 건 "Xcode 27용 CLT"인데 macOS 27 전용이라
+    `softwareupdate`에 뜨지 않는다. 숨은 목록을 보려면
+    `touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress; softwareupdate -l` → 26.5/26.6만 나온다.
+  - 경고를 없애려면 macOS 27로 메이저 업그레이드해야 한다. 그건 사람이 정할 일이라 셋업에서 하지 않는다.
 
 #### setup.sh 순서 재구성 — 안내와 선택을 전부 맨 앞으로 (2026-11-17)
 - 문제: 선택 앱 질문이 TCC 안내 뒤에 있었고, 사람이 할 일(잠금화면 비밀번호, SSH, 앱별 권한)은
