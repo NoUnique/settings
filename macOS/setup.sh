@@ -3,10 +3,11 @@
 #
 # 설계 원칙: 사람 개입을 앞뒤로 몰아넣고 가운데를 통으로 자동화한다.
 #
+#   [0]  할 일 전체 안내 + 선택 전부 받기 ← 사람 (여기서 다 정한다)
 #   [앞] TCC 권한 2개 켜기        ← 사람 (보안 결정)
-#   [앞] sudo 비밀번호 1회 입력    ← 사람 (자격증명)
+#   [앞] sudo / 관리자 비밀번호    ← 사람 (자격증명)
 #   [중간] 전 과정 무인 자동
-#   [뒤] gh 로그인 / SSH passphrase ← 사람 (자격증명)
+#   [뒤] 앱별 손쉬운 사용 / SSH / 기본 브라우저 ← 사람
 #
 # 사용법:
 #   ./setup.sh          전체 실행
@@ -42,33 +43,61 @@ check() {
 
 [ "${1:-}" = "--check" ] && { check; exit 0; }
 
+# ---------------------------------------------------------------- [0] 전체 안내
+# 원칙: 시작하기 전에 "사람이 할 일 전부"와 "정해야 할 것 전부"를 먼저 보여주고,
+#       선택은 여기서 한 번에 다 받는다. 그 뒤로는 끝날 때까지 묻지 않는다.
+step "시작 전 안내 — 사람이 할 일 전체 목록"
+OPT_LIST=$(sed -n 's/^cask "\([^"]*\)".*/\1/p' Brewfile.optional | tr '\n' ' ')
+MAS_LIST=$(sed -n 's/^mas "\([^"]*\)".*/\1/p' Brewfile.optional | tr '\n' ' ')
+cat <<EOF
+  [지금, 시작 전]
+    1) 선택 앱 설치 여부 고르기 (바로 아래에서 묻는다): ${OPT_LIST:-없음}
+    2) SSH 키를 어디서 가져올지 고르기 (NAS 백업 복원 / gh로 새로 생성 / 나중에)
+    3) 시스템 설정 > 개인정보 보호 및 보안 에서 소문자 \`claude\` 켜기
+         - 손쉬운 사용
+         - 화면 기록 (목록에 없으면 + 로 claude.app 추가 → Claude 앱 재시작)
+    4) sudo 비밀번호 1회 (한/영 확인)
+    5) 잠금 화면 암호 요구 1시간 — 관리자 비밀번호 1회 (sysadminctl)
+
+  [자동 구간 중 — 창이 뜨면 Claude가 처리하거나 바로 알린다]
+    - "인터넷에서 다운로드된 앱" 첫 실행 확인 → 열기
+    - "로컬 네트워크 기기 찾기" → 기본은 허용 안 함 (NAS 등 꼭 필요한 것만 허용)
+    - "○○을(를) 제어하려 함"(자동화) → 무슨 창인지 알리고 사람이 결정
+
+  [끝난 뒤]
+    6) 손쉬운 사용: Rectangle, Ghostty 켜기 → 각 앱 재시작
+    7) SSH: 고른 방식대로 (NAS 복원이면 NAS 로그인 / gh auth login)
+    8) 기본 브라우저 Chrome 지정 (시스템 확인 창)
+    9) App Store 앱 직접 설치: ${MAS_LIST:-없음}
+EOF
+
+step "선택 — 여기서 전부 정한다"
+OPTIONAL_CASKS=()
+for c in $OPT_LIST; do
+  read -r -p "  $c 설치할까? [y/N] > " yn </dev/tty
+  [[ "$yn" =~ ^[Yy]$ ]] && OPTIONAL_CASKS+=("$c")
+done
+
+echo "  SSH 키:  1) NAS 백업에서 복원   2) gh로 새로 생성   3) 나중에"
+read -r -p "  고르기 [1/2/3] > " SSH_MODE </dev/tty
+case "$SSH_MODE" in 1|2) ;; *) SSH_MODE=3 ;; esac
+
+step "선택 요약"
+echo "  선택 앱:  ${OPTIONAL_CASKS[*]:-없음}"
+case "$SSH_MODE" in 1) SSH_DESC="NAS 백업에서 복원" ;; 2) SSH_DESC="gh로 새로 생성" ;; *) SSH_DESC="나중에" ;; esac
+echo "  SSH 키:   $SSH_DESC"
+read -r -p $'  이대로 진행? [Y/n] > ' go </dev/tty
+[[ "$go" =~ ^[Nn]$ ]] && { echo "  중단"; exit 1; }
+
 # ---------------------------------------------------------------- [앞] 사람
-step "사람이 먼저 해야 하는 것"
+step "권한 — 소문자 claude 켜기"
 cat <<'EOF'
-  시스템 설정 > 개인정보 보호 및 보안 에서 소문자 `claude` 를 두 곳 모두 켜라.
-    - 손쉬운 사용   (GUI 조작)
-    - 화면 기록     (화면 확인)
-
   대문자 `Claude`가 아니라 소문자 `claude`다. SETUP-LOG.md 0번 참고.
-
-  창 열기:
     open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
 EOF
-read -r -p $'\n  켰으면 Enter (건너뛰려면 s) > ' a
+read -r -p $'\n  켰으면 Enter (건너뛰려면 s) > ' a </dev/tty
 [ "$a" = "s" ] || check
-
-step "선택 앱 (Brewfile.optional) — 지금 하나씩 정한다"
-# 선택사항은 기계마다 다르므로 묻지 않고 넘어가지 않는다.
-# 가운데 자동 구간을 멈추지 않도록 질문은 여기(앞)에서 끝낸다.
-OPTIONAL_CASKS=()
-while IFS= read -r c; do
-  read -r -p "  $c 설치할까? [y/N] > " yn </dev/tty
-  [[ "$yn" =~ ^[Yy]$ ]] && OPTIONAL_CASKS+=("$c")
-done < <(sed -n 's/^cask "\([^"]*\)".*/\1/p' Brewfile.optional)
-if grep -q '^mas ' Brewfile.optional; then
-  echo "  ※ App Store 앱(KakaoTalk 등)은 자동 설치하지 않는다 — 끝난 뒤 App Store에서 직접 설치 (SETUP-LOG 20번)"
-fi
 
 step "sudo 인증 (한 번만 입력하면 이후 전부 무인)"
 echo "  ※ 한/영 상태 확인. 비밀번호는 화면에 표시되지 않는다."
@@ -77,6 +106,10 @@ sudo -v
 while true; do sudo -n true; sleep 60; kill -0 "$$" 2>/dev/null || exit; done 2>/dev/null &
 SUDO_KEEPALIVE=$!
 trap 'kill $SUDO_KEEPALIVE 2>/dev/null' EXIT
+
+step "잠금 화면 암호 요구 1시간 (관리자 비밀번호)"
+# 뒤로 미루면 사람이 끝까지 붙어 있어야 하므로 앞에서 처리한다
+sysadminctl -screenLock 3600 -password - || warn "실패 — 나중에: sysadminctl -screenLock 3600 -password -"
 
 # ---------------------------------------------------------------- [중간] 자동
 step "Xcode Command Line Tools"
@@ -130,27 +163,33 @@ for s in scripts/*.sh; do
 done
 
 # ---------------------------------------------------------------- [뒤] 사람
-step "남은 사람 단계 — 자격증명"
-cat <<'EOF'
-  아래는 비밀번호/비밀키가 오가는 단계라 사람이 직접 해야 한다.
-
-  1) GitHub 인증 + SSH 키 생성/등록
-       gh auth login
-     선택: GitHub.com / SSH / 키 생성 Yes / passphrase 설정 / 브라우저 인증
-
-  2) SSH 연결 확인 (여기서 입력한 passphrase가 키체인에 저장된다)
+step "남은 사람 단계"
+case "$SSH_MODE" in
+  1) cat <<'EOF'
+  1) SSH 키 — NAS 백업에서 복원 (SETUP-LOG 27번)
+       Finder ⌘K → smb://NoUnique-NAS.local/backup  (NAS 로그인)
+       05_dotfiles.tar.gz 의 .ssh 복원 → 권한 700/600/644 → ssh -T git@github.com
+       GitHub에 없는 키면: gh auth login (기존 키 업로드 선택)
+EOF
+  ;;
+  2) cat <<'EOF'
+  1) SSH 키 — gh로 새로 생성
+       gh auth login   (GitHub.com / SSH / 키 생성 Yes / passphrase / 브라우저 인증)
        ssh -T git@github.com
+EOF
+  ;;
+  *) echo "  1) SSH 키 — 나중에 (SETUP-LOG 27번 참고)" ;;
+esac
+cat <<EOF
+
+  2) 손쉬운 사용 권한 — Rectangle, Ghostty (켠 뒤 앱 재시작)
+       시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용
+       Ghostty는 목록에 없으면 + 로 /Applications/Ghostty.app 추가
 
   3) Chrome을 기본 브라우저로
        시스템 설정 > 데스크탑 및 Dock > 기본 웹 브라우저
 
-  4) 손쉬운 사용 권한 — Rectangle, Ghostty (켠 뒤 앱 재시작)
-       시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용
-       Ghostty는 목록에 없으면 + 로 /Applications/Ghostty.app 추가
-       (없으면 Quick Terminal ⌥⌘T 가 Ghostty에 포커스 있을 때만 동작)
-
-  5) 잠금 화면 암호 요구 1시간 (관리자 비밀번호 필요)
-       sysadminctl -screenLock 3600 -password -
+  4) App Store 앱 직접 설치: ${MAS_LIST:-없음}
 EOF
 
 step "완료"

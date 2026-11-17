@@ -2,7 +2,8 @@
 #
 #   brew bundle --file=Brewfile.optional
 #
-# setup.sh 는 본 Brewfile 만 설치한다. 필요한 기계에서만 이걸 따로 실행할 것.
+# setup.sh 가 시작할 때 cask 를 하나씩 [y/N] 으로 묻고, 고른 것만 설치한다.
+# mas 앱은 자동 설치하지 않고 끝에 "직접 설치"로 안내한다.
 
 cask "chatgpt"
 

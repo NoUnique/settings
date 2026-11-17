@@ -45,11 +45,11 @@ Claude가 **하지 않는 것**: 비밀번호·passphrase 입력, TCC 권한 토
 | 시점 | 무엇 | 왜 사람이 |
 |---|---|---|
 | 시작 전 | 손쉬운 사용: 소문자 `claude` 켜기 | TCC |
-| 시작 전 | 선택 앱(Brewfile.optional) 설치 여부 — setup.sh가 하나씩 묻는다 | 기계마다 다름 |
+| 시작 전 | **선택은 전부 setup.sh 맨 처음에 받는다**: 선택 앱(Brewfile.optional) 하나씩 y/N, SSH 키 출처(NAS 복원/gh 새로 생성/나중에) → 요약 확인 후 진행 | 기계마다 다름 |
 | 시작 전 | 화면 기록: `+`로 `~/Library/Application Support/Claude/claude-code/<버전>/<해시>/claude.app` 추가 → **Claude 앱 재시작** | TCC. 목록에 자동으로 안 뜬다 |
 | setup.sh 앞 | `sudo -v` 비밀번호 (한/영 확인) | 자격증명 |
 | setup.sh 뒤 | 손쉬운 사용: **Rectangle**, **Ghostty** 켜기 → 각 앱 재시작 | TCC |
-| setup.sh 뒤 | `sysadminctl -screenLock 3600 -password -` | 관리자 비밀번호 |
+| setup.sh 앞 | `sysadminctl -screenLock 3600 -password -` (sudo 바로 다음으로 옮김) | 관리자 비밀번호 |
 | setup.sh 뒤 | `gh auth login` (SSH, 기존 키 업로드 또는 생성) | 자격증명 |
 | setup.sh 뒤 | 기본 브라우저 Chrome 지정 | 시스템 확인 창 |
 | 수시 | "로컬 네트워크 기기 찾기" 허용 창 → **기본은 허용 안 함**, 꼭 필요한 것(NAS 등)만 허용 | 사용자 방침 |
@@ -1910,4 +1910,13 @@ killall ghostty && open -g -j -a Ghostty
 ### 미해결
 
 - `brew doctor`: Command Line Tools 새 버전 경고. 소프트웨어 업데이트로 올릴 것.
+
+#### setup.sh 순서 재구성 — 안내와 선택을 전부 맨 앞으로 (2026-11-17)
+- 문제: 선택 앱 질문이 TCC 안내 뒤에 있었고, 사람이 할 일(잠금화면 비밀번호, SSH, 앱별 권한)은
+  끝에 가서야 알 수 있었다. 사용자는 **시작하기 전에 할 일 전부와 고를 것 전부를 알고, 선택은 처음에 끝내길** 원한다.
+- 조치: setup.sh 맨 앞에 `[0] 전체 안내`(시작 전 / 자동 구간 중 뜰 수 있는 창 / 끝난 뒤)를 출력하고,
+  이어서 선택 앱 y/N과 SSH 키 출처를 한 번에 받은 뒤 요약을 보여주고 `이대로 진행? [Y/n]`.
+  `sysadminctl`은 sudo 바로 다음으로 옮겼다. 끝의 안내는 고른 SSH 방식에 맞춰 출력한다.
+- 함정: macOS 기본 bash 3.2에서는 `$( case ... ) ... esac )`처럼 명령 치환 안에 `case`를 쓰면
+  `)` 때문에 구문 오류가 난다 → 변수에 먼저 담는다.
 
