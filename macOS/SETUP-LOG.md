@@ -52,9 +52,12 @@ Claude가 **하지 않는 것**: 비밀번호·passphrase 입력, TCC 권한 토
 | setup.sh 앞 | `sysadminctl -screenLock 3600 -password -` (sudo 바로 다음으로 옮김) | 관리자 비밀번호 |
 | setup.sh 뒤 | `gh auth login` (SSH, 기존 키 업로드 또는 생성) | 자격증명 |
 | setup.sh 뒤 | 기본 브라우저 Chrome 지정 | 시스템 확인 창 |
-| 수시 | "로컬 네트워크 기기 찾기" 허용 창 → **기본은 허용 안 함**, 꼭 필요한 것(NAS 등)만 허용 | 사용자 방침 |
+| 수시 | "로컬 네트워크 기기 찾기" 허용 창 → **기본은 허용 안 함**, 꼭 필요한 것만 허용 (허용: Bambu Studio — LAN 프린터 / 거부: Stats 등) | 사용자 방침 |
 | 수시 | "claude가 ○○을 제어하려 함"(자동화) 창 | TCC. 가능하면 이런 창이 안 뜨는 방법을 쓴다 |
 | 복원 시 | NAS SMB 로그인 | 자격증명 |
+| 선택: Fusion (설치 전) | 개인정보 보호 및 보안 > **앱 관리**에서 `Install Autodesk Fusion` 켜기 (목록에 없으면 설치 프로그램을 한 번 실행해 막히게 한 뒤 나타남) | TCC. 안 켜면 설치가 조용히 깨진다 |
+| 선택: Fusion | 첫 실행 Autodesk 로그인 → "개인용(비상업적)" 라이선스 선택 | 계정 자격증명 |
+| 선택: Bambu Studio | 첫 실행 마법사(지역·프린터 모델·노즐) + Bambu 계정 로그인 | 계정 자격증명 |
 
 ### 경고창 처리 규칙 — 앱을 실행하거나 설치한 직후엔 반드시 화면을 확인한다
 
@@ -1931,4 +1934,29 @@ killall ghostty && open -g -j -a Ghostty
   `sysadminctl`은 sudo 바로 다음으로 옮겼다. 끝의 안내는 고른 SSH 방식에 맞춰 출력한다.
 - 함정: macOS 기본 bash 3.2에서는 `$( case ... ) ... esac )`처럼 명령 치환 안에 `case`를 쓰면
   `)` 때문에 구문 오류가 난다 → 변수에 먼저 담는다.
+
+#### 3D 프린팅 앱 — Fusion(무료 개인용), Bambu Studio (2026-11-17, 이 맥에만)
+- 둘 다 `Brewfile.optional`에 넣었다 → 다른 맥에서는 setup.sh 시작 때 y/N으로 묻는다(기본 설치 아님).
+- `autodesk-fusion` 캐스크는 앱이 아니라 Client Downloader(`--quiet`)를 실행해 `~/Applications/Autodesk Fusion.app`에
+  설치한다(/Applications 아님, 수 GB 다운로드라 오래 걸린다 → 백그라운드로 돌린다).
+- 무료 개인용은 별도 설치본이 없다. 같은 앱에서 로그인 후 라이선스를 "개인용"으로 고르는 것이다(사람 단계).
+- `bambu-studio`는 `/Applications/BambuStudio.app`. 로컬 네트워크 요청은 **허용**(프린터 LAN 연결에 필요).
+- **Fusion 설치 실패 기록 (2026-11-17)**
+  1. `brew install --cask autodesk-fusion` → brew는 "successfully installed"인데 실제로는 깨졌다.
+     설치 프로그램(streamer)이 `claude`의 자식으로 돌면서 압축 해제를 재시도할 때 앱 번들을 고치려 했고,
+     macOS **앱 관리** 보호가 막았다 ("Mac에서 'claude'이(가) 앱을 수정하려는 시도를 차단했습니다").
+     로그: `~/Library/Logs/autodesk.webdeploy.streamer.log`에 `Operation not permitted`.
+     결과: `spctl`이 "a sealed resource is missing or invalid".
+  2. 공식 설치 프로그램을 `open`으로 다시 실행 → "최신 버전이 이미 설치되어 있습니다"만 띄우고 고치지 않는다.
+  3. `claude`로는 깨진 파일을 지울 수도 없다(같은 보호). → `~/Applications/Remove Autodesk Fusion.app`을 `open`으로
+     실행해 제거(확인 창 "Uninstall" 클릭 필요, 'streamer' 다운로드 폴더 접근 요청은 거부해도 됨).
+  4. 재설치도 `Install Autodesk Fusion` 자신이 같은 이유로 막힘("권한 문제 — Fusion 파일을 컴퓨터에 쓸 수 없습니다").
+  5. **해결: 사람이 앱 관리에서 `Install Autodesk Fusion`을 켬 → 설치 프로그램 `open` 재실행 → 84초 만에 완료.**
+     `claude`에는 앱 관리 권한을 주지 않았다(다른 앱을 고치거나 지울 수 있는 권한이라 설치 프로그램에만 준다).
+- 정상 설치 후에도 `codesign --verify`는 실패한다. 남는 것은 (a) 실행 중 Fusion이 번들 안에 만드는
+  셰이더 캐시 `EffectBlobs/*.ogso` "file added", (b) 배포에서 빠진 내부 테스트/템플릿 플러그인
+  (`CAMAPITests10`, `SimTemplate10`) "file missing"뿐. 서명 검사로 판정하지 말고 **앱이 로그인 화면까지 뜨는지**로 판정한다.
+- 처리한 창: 설치 프로그램 로컬 네트워크 → 거부, `ADPClientService`(Autodesk 사용 데이터 서비스) 로컬 네트워크 → 거부.
+- 교훈(Claude): 백그라운드로 설치를 돌리고 "끝"을 brew 출력으로만 판단하지 말 것. 알림까지 포함해 화면을 보고,
+  설치 결과(서명·로그)를 확인한 뒤에야 성공이라고 말한다. 제거 프로그램 확인 창을 화면 확인 없이 5분 기다린 실수도 있었다.
 
