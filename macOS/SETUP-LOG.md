@@ -547,6 +547,13 @@ defaults write com.apple.WindowManager EnableTilingOptionAccelerator -bool true
 
 ### 단축키 배열 — 권장 설정 + 커스텀 6개
 
+> **2026-11-17 장애: Rectangle 단축키가 전부 안 먹음.** 원인은 로그인 항목 미등록이었다.
+> macOS 26.7.3 업데이트 재부팅 뒤 Rectangle 프로세스가 아예 없었다 (로그인 항목: Ghostty, Hidden Bar, Stats뿐).
+> 손쉬운 사용 권한은 살아 있었다 → `open -a Rectangle` 후 ⌃⌥← 로 Finder 창이 왼쪽 절반(0,30,840,1050)으로 감 = 정상.
+> 조치: 로그인 항목 등록 + `rectangle.sh`에 등록 단계 추가. System Events로 등록하면 "앱 백그라운드 활동 —
+> System Events" 알림이 한 번 뜬다(정보성, 처리 불필요).
+> 교훈(Claude): 재부팅 뒤 점검에서 "창/알림"만 보지 말고 상주 앱(Rectangle·Stats·Hidden Bar·Ghostty)이 실제로 떠 있는지 `pgrep`으로 확인.
+
 **실행: [`scripts/rectangle.sh`](scripts/rectangle.sh)** (설치 + 설정 자동화)
 
 키보드 위치가 곧 의미가 되게 배치한다:
@@ -1951,6 +1958,7 @@ killall ghostty && open -g -j -a Ghostty
   4. 함정: "Bambu 네트워크 플러그인 다운로드 — 성공적으로 설치했습니다" 창이 **메인 창 뒤에 숨어** 떠 있어서
      로그인/등록 클릭이 먹지 않았다. `System Events`로 창 목록을 보고 AXRaise → 확인.
   5. 로그인/등록 → "가입하기" 탭: 생년월일·이메일·인증 코드(코드 보내기)·비밀번호 = 사람 단계.
+  6. 사용자가 가입·로그인·P2S 연결까지 완료 → 장치 탭 카메라 라이브뷰 동작 확인 (2026-11-17).
 - **Fusion 설치 실패 기록 (2026-11-17)**
   1. `brew install --cask autodesk-fusion` → brew는 "successfully installed"인데 실제로는 깨졌다.
      설치 프로그램(streamer)이 `claude`의 자식으로 돌면서 압축 해제를 재시도할 때 앱 번들을 고치려 했고,

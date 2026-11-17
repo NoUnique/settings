@@ -62,6 +62,17 @@ defaults write com.apple.WindowManager EnableTilingByEdgeDrag -bool true
 defaults write com.apple.WindowManager EnableTopTilingByEdgeDrag -bool true
 defaults write com.apple.WindowManager EnableTilingOptionAccelerator -bool true
 
+# --- 로그인 항목 등록 ---
+# 빠뜨리면 재부팅(예: macOS 업데이트) 뒤 Rectangle이 안 떠서 단축키가 전부 죽는다 (2026-11-17 실제로 겪음).
+# 앱 자체 "로그인 시 실행" 스위치(SMAppService)는 셸에서 켤 수 없어서 로그인 항목을 직접 등록한다.
+if osascript -e 'tell application "System Events" to get name of every login item' 2>/dev/null \
+     | tr ',' '\n' | sed 's/^ *//' | grep -qx Rectangle; then
+  echo "    로그인 항목: 이미 등록됨"
+else
+  osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/Rectangle.app", hidden:true}' >/dev/null 2>&1
+  echo "    로그인 항목: 등록 완료"
+fi
+
 open -a Rectangle
 
 cat <<'EOF'
