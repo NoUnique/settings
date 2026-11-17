@@ -1959,4 +1959,13 @@ killall ghostty && open -g -j -a Ghostty
 - 처리한 창: 설치 프로그램 로컬 네트워크 → 거부, `ADPClientService`(Autodesk 사용 데이터 서비스) 로컬 네트워크 → 거부.
 - 교훈(Claude): 백그라운드로 설치를 돌리고 "끝"을 brew 출력으로만 판단하지 말 것. 알림까지 포함해 화면을 보고,
   설치 결과(서명·로그)를 확인한 뒤에야 성공이라고 말한다. 제거 프로그램 확인 창을 화면 확인 없이 5분 기다린 실수도 있었다.
+- **로그인 후 "데이터를 로드할 수 없음" (2026-11-17)**: 제목 표시줄은 이미 "개인(상업적 용도로 사용할 수 없음)"인데
+  데이터 패널이 "서버에 연결되어 있지 않은 것 같습니다"를 띄우고 다시 시도해도 그대로였다. 인터넷 문제가 아니었다.
+  - 원인(Fusion 로그 `~/Library/Application Support/Autodesk/Autodesk Fusion 360/<id>/logs/AppLogFile*.log`):
+    새 계정이라 허브(팀)가 없음 → `checkHubStatus: hasAPersonalSite=0, hasTeamHub=0` → 팀 선택(TeamPicker) 화면에서
+    허브가 만들어졌지만 실행 중인 Fusion은 "허브 없음" 상태를 계속 들고 있었다.
+  - 라이선스 확인도 같은 로그에서: `EntitlementType: Personal/Hobbyist`, `isTrial=false` → 체험판 아님.
+  - **해결: Fusion 재시작.** 재시작하자 정상 작업 화면 + 개인용 제한 안내(편집 가능 문서 10개, 읽기 전용 무제한).
+  - Fusion은 Cmd+Q(System Events keystroke)를 무시했다. `kill -TERM`으로 끄면 "Fusion 오류 보고서" 창이 뜬다 →
+    보고서는 이메일이 들어가므로 보내지 않고 "닫기". 다음엔 사람에게 Fusion 메뉴 > 종료를 부탁하는 편이 깔끔하다.
 
