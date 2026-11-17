@@ -1860,6 +1860,12 @@ Brewfile의 다른 앱(Rectangle, Ghostty, Stats, Hidden Bar, Slack, Notion, Fig
 
 - Stats가 "로컬 네트워크 기기 찾기"를 요청 → **허용 안 함**. 메뉴 막대 모니터에 필요 없다.
   방침: 로컬 네트워크는 기본 거부, NAS 접근처럼 꼭 필요한 것만 허용.
+- **macOS 업데이트(26.5.1 → 26.7.3) 후 재부팅하자 같은 창이 다시 떴다.** 앞에서 거부했어도 OS 업데이트 뒤에
+  다시 묻는다. 같은 결정(허용 안 함)으로 처리.
+- 같은 재부팅에서 로그인 항목으로 뜬 Ghostty가 "인터넷에서 다운로드된 앱" 첫 실행 창을 띄웠다
+  (앞서 `open`으로 실행했어도 확인 창을 실제로 누른 적이 없으면 다시 뜬다). `spctl -a -vv`로 공증 확인 후 열기.
+- **교훈: 재부팅·OS 업데이트·로그인 직후에도 화면을 먼저 캡처한다.** 사람이 "업데이트했어"라고 하면
+  다른 작업 전에 화면부터 본다. 이번엔 이걸 안 해서 사람이 먼저 지적했다.
 - Rectangle 동작 확인용으로 `tell application "Finder"`를 쓰자 "claude가 Finder를 제어하려 함" 창이 떴다.
   검증 목적이라면 앱 자동화 권한이 필요 없는 방법(System Events로 창 위치 읽기 등)을 쓴다.
 
@@ -1914,6 +1920,8 @@ killall ghostty && open -g -j -a Ghostty
     `softwareupdate`에 뜨지 않는다. 숨은 목록을 보려면
     `touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress; softwareupdate -l` → 26.5/26.6만 나온다.
   - 경고를 없애려면 macOS 27로 메이저 업그레이드해야 한다. 그건 사람이 정할 일이라 셋업에서 하지 않는다.
+  - 26.7.3으로 마이너 업데이트한 뒤에도 같다: 제공되는 CLT는 여전히 26.5/26.6뿐, 경고 유지
+    (`brew doctor`는 이 조합을 "Tier 2 configuration"이라고도 표시). macOS 27.2.1로 올려야 사라진다.
 
 #### setup.sh 순서 재구성 — 안내와 선택을 전부 맨 앞으로 (2026-11-17)
 - 문제: 선택 앱 질문이 TCC 안내 뒤에 있었고, 사람이 할 일(잠금화면 비밀번호, SSH, 앱별 권한)은
